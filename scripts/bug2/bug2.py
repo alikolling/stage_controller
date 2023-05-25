@@ -5,59 +5,61 @@ import math
 
 class BUG2:
     def __init__(self):
-        self.regions = [0, 0, 0, 0, 0]
-        self.flag = 1   #moving forward or turning
-        self.pose_flag = 0
+        self.min_lasers = [0, 0, 0, 0, 0]
+        self.move_or_angle = 1   #moving forward or turning
         self.action = [0.0, 0.1]
-        self.flag_1 = 0 # obstacle avoidance or moving to target
-        self.first = True
-        self.colission_distance = 0.18 * 3
+        self.avoidance_on = 0 # obstacle avoidance or moving to target
+        self.collision_distance = 0.18 * 3
         
     def reset(self):
-        self.regions = [0, 0, 0, 0, 0]
-        self.flag = 1 #moving forward or turning
-        self.pose_flag = 0
+        self.min_lasers = [0, 0, 0, 0, 0]
+        self.move_or_angle = 1 #moving forward or turning
         self.action = [0.0, 0.1]
-        self.flag_1 = 0 # obstacle avoidance or moving to target
-        self.first = True
-        self.colission_distance = 0.18 * 3
+        self.avoidance_on = 0 # obstacle avoidance or moving to target
+        self.collision_distance = 0.18 * 3
 
     def angle_towards_goal(self, angle):
+    '''
+    Funcion that orientates the robot towards the goal.
+    '''
         difference_angle = angle
-        if math.fabs(difference_angle) > 0.05:
+        if np.absolute(difference_angle) > 0.05:
             self.action[0] = 0.1 if difference_angle > 0 else -0.1
             self.action[1] = 0.0
-        if math.fabs(difference_angle) <= 0.05:
-            self.flag_shift(1)
+        if np.absolute(difference_angle) <= 0.05:
+            self.move_or_angle = 1
 
     def obstacle_avoidance(self):
-        reg_values = self.regions
-        if reg_values[2] < self.colission_distance and reg_values[3] < self.colission_distance and reg_values[1] < self.colission_distance:
+    '''
+    Function that avoid the obstacles.
+    '''
+        values = self.min_lasers
+        if values[2] < self.collision_distance and values[3] < self.collision_distance and values[1] < self.collision_distance:
             self.action[1] = 0.005 # obstacles on all sides, stop and turn
             self.action[0] = -0.3 /4
-        elif reg_values[2] < self.colission_distance and reg_values[3] < self.colission_distance and reg_values[1] > self.colission_distance:
+        elif values[2] < self.collision_distance and values[3] < self.collision_distance and values[1] > self.collision_distance:
             self.action[1] = 0.005  #obstacless on the front and right, turn left
             self.action[0] = 0.4/ 4
-        elif reg_values[2] < self.colission_distance and reg_values[3] > self.colission_distance and reg_values[1] < self.colission_distance:
+        elif values[2] < self.collision_distance and values[3] > self.collision_distance and values[1] < self.collision_distance:
             self.action[1] = 0.005 # obstacles in the front and left, turn right
             self.action[0] = -0.4 /4  # -0.4
-        elif reg_values[2] > self.colission_distance and reg_values[3] > self.colission_distance and reg_values[1] > self.colission_distance:
+        elif values[2] > self.collision_distance and values[3] > self.collision_distance and values[1] > self.collision_distance:
             self.action[1] = 0.1
             self.action[0]= 0.
-        elif reg_values[2] > self.colission_distance and reg_values[3] < self.colission_distance and reg_values[1] > self.colission_distance:
-            self.action[1] = 0.3 / 4 # obstacles in left, turn right and go forward
+        elif values[2] > self.collision_distance and values[3] < self.collision_distance and values[1] > self.collision_distance:
+            self.action[1] = 0.3 / 4 # obstacles in right, turn left and go forward
             self.action[0] = -0.2  / 4 
-        elif reg_values[2] < self.colission_distance and reg_values[3] > self.colission_distance and reg_values[1] > self.colission_distance:
+        elif values[2] < self.collision_distance and values[3] > self.collision_distance and values[1] > self.collision_distance:
             self.action[1] = 0.005    # obstacles in front, stop and turn
             self.action[0] = -0.3 / 4
-        elif reg_values[2] > self.colission_distance and reg_values[3] > self.colission_distance and reg_values[1] < self.colission_distance:
-            self.action[1] = 0.4 / 4 # obstacles right, turn left and go forward
+        elif values[2] > self.collision_distance and values[3] > self.collision_distance and values[1] < self.collision_distance:
+            self.action[1] = 0.4 / 4 # obstacles left, turn right and go forward
             self.action[0] = 0.1/ 4 
 
-    def flag_shift(self, f):
-        self.flag = f
-
     def move(self, angle, distance):
+    '''
+    Function to move the robot on the direction of the goal.
+    '''
         difference_angle = angle
         difference_pos = distance
 
@@ -66,16 +68,16 @@ class BUG2:
             self.action[1] = 0.05
             self.action[0]= 0. 
         else:
-            self.flag_shift(2) # reached target
+            self.move_or_angle = 2 # reached target
         # state change conditions
-        if math.fabs(difference_angle) > 0.03:
-            self.flag_shift(0)
+        if np.absolute(difference_angle) > 0.03:
+            self.move_or_angle = 0
 
     def laser_scan(self, laser_msg):
         laser_msg = np.array(laser_msg)
 
-        self.regions = [
-                  min(laser_msg[865:1081]), #Right 
+        self.min_lasers = [
+                  min(laser_msg[865:1081]),        #Right 
                   min(laser_msg[649:864]),        #Front Right
                   min(laser_msg[433:648]),       #Front
                   min(laser_msg[216:432]),      #Front Left
@@ -83,48 +85,52 @@ class BUG2:
                  ]
 
     def get_action(self, state):
+    '''
+    Function to decide the action to be taken. Recieves the laser ranges, the distance and the angle from the robot to the goal.
+    '''
         self.laser_scan(state[0:-2])
-        reg_values = self.regions
+        values = self.min_lasers
         self.dist = state[-1]
         self.angle = state[-2]
-        if (reg_values[2] < self.colission_distance or reg_values[3] < self.colission_distance or reg_values[1] < self.colission_distance):
-                self.flag_1 = 1
+        #if colliding, avoid obstacles
+        if (values[2] < self.collision_distance or values[3] < self.collision_distance or values[1] < self.collision_distance):
+                self.avoidance_on = 1
                 self.obstacle_avoidance()
         
-        #if coliding and close to target
-        elif self.dist < 4 and reg_values[2] < self.colission_distance:
+        #if colliding and close to target
+        elif self.dist < 4 and values[2] < self.collision_distance:
             if self.dist < 0.5:
                 self.action[0] = 0.0
                 self.action[1] = 0.0
                 self.angle_towards_goal(angle=state[-2])
                 self.move(angle=state[-2], distance=state[-1])
-                self.flag_1 = 0
+                self.avoidance_on = 0
 
             else:
-                self.flag_1 = 1
+                self.avoidance_on = 1
                 self.obstacle_avoidance()
-        #if coliding, avoid obstacle#if not coliding and far to target
-        elif self.dist > 4 or (reg_values[2] > self.colission_distance and reg_values[3] > self.colission_distance and reg_values[1] > self.colission_distance):
-            if self.flag == 0:
+        #if not colliding and far go to target
+        elif self.dist > 4 or (values[2] > self.collision_distance and values[3] > self.collision_distance and values[1] > self.collision_distance):
+            if self.move_or_angle == 0:
                 self.angle_towards_goal(angle=state[-2])
 
-            elif self.flag == 1:
+            elif self.move_or_angle == 1:
                 self.move(angle=state[-2], distance=state[-1])
-                
-        elif self.dist < 4 and self.flag_1 == 1:
-            if self.flag == 0:
+        #if close and colision avoidance is on moves or orientate to the goal        
+        elif self.dist < 4 and self.avoidance_on == 1:
+            if self.move_or_angle == 0:
                 self.angle_towards_goal(angle=state[-2])
 
-            elif self.flag == 1:
+            elif self.move_or_angle == 1:
                 self.move(angle=state[-2], distance=state[-1])
 
-            self.flag_1 = 0
-
+            self.avoidance_on = 0
+        #if really close, send it
         elif self.dist < 0.5:
             self.action[0] = 0.0
             self.action[1] = 0.0
             self.angle_towards_goal(angle=state[-2])
             self.move(angle=state[-2], distance=state[-1])
-            self.flag_1 = 0
+            self.avoidance_on = 0
         
         return self.action
