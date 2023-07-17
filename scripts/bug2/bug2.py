@@ -19,9 +19,9 @@ class BUG2:
         self.collision_distance = 0.18 * 3
 
     def angle_towards_goal(self, angle):
-    '''
-    Funcion that orientates the robot towards the goal.
-    '''
+        '''
+        Funcion that orientates the robot towards the goal.
+        '''
         difference_angle = angle
         if np.absolute(difference_angle) > 0.05:
             self.action[0] = 0.1 if difference_angle > 0 else -0.1
@@ -30,9 +30,9 @@ class BUG2:
             self.move_or_angle = 1
 
     def obstacle_avoidance(self):
-    '''
-    Function that avoid the obstacles.
-    '''
+        '''
+        Function that avoid the obstacles.
+        '''
         values = self.min_lasers
         if values[2] < self.collision_distance and values[3] < self.collision_distance and values[1] < self.collision_distance:
             self.action[1] = 0.005 # obstacles on all sides, stop and turn
@@ -57,9 +57,9 @@ class BUG2:
             self.action[0] = 0.1/ 4 
 
     def move(self, angle, distance):
-    '''
-    Function to move the robot on the direction of the goal.
-    '''
+        '''
+        Function to move the robot on the direction of the goal.
+        '''
         difference_angle = angle
         difference_pos = distance
 
@@ -85,9 +85,9 @@ class BUG2:
                  ]
 
     def get_action(self, state):
-    '''
-    Function to decide the action to be taken. Recieves the laser ranges, the distance and the angle from the robot to the goal.
-    '''
+        '''
+        Function to decide the action to be taken. Recieves the laser ranges, the distance and the angle from the robot to the goal.
+        '''
         self.laser_scan(state[0:-2])
         values = self.min_lasers
         self.dist = state[-1]
