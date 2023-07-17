@@ -13,7 +13,7 @@ Pode-se intalar o Stage pelo comando:
 Essa implementação faz uso de uma interface *gym* para o recebimento e envio das mensagens ao ROS. 
 Para instalar ela:
 
-    pip3 install gym==0.24.1
+    pip3 install gym==0.21.0
     git clone https://github.com/alikolling/gym_stage
     cd gym_stage
     pip3 install .
